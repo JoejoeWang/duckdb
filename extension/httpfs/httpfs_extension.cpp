@@ -3,10 +3,11 @@
 #include "httpfs_extension.hpp"
 
 #include "create_secret_functions.hpp"
-#include "duckdb.hpp"
-#include "s3fs.hpp"
-#include "hffs.hpp"
 #include "crypto.hpp"
+#include "duckdb.hpp"
+#include "hffs.hpp"
+#include "s3fs.hpp"
+#include "simulation_fs.hpp"
 
 namespace duckdb {
 
@@ -17,6 +18,9 @@ static void LoadInternal(DatabaseInstance &instance) {
 	fs.RegisterSubSystem(make_uniq<HTTPFileSystem>());
 	fs.RegisterSubSystem(make_uniq<HuggingFaceFileSystem>());
 	fs.RegisterSubSystem(make_uniq<S3FileSystem>(BufferManager::GetBufferManager(instance)));
+
+	// Registers our local simulation layer
+	fs.RegisterSubSystem(make_uniq<SimulationFileSystem>());
 
 	auto &config = DBConfig::GetConfig(instance);
 
