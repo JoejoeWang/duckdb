@@ -6,6 +6,27 @@
 namespace duckdb {
 
 /**
+ * SimulationState is analogous to HTTPState in httpfs.cpp:
+ * It tracks usage counters for requests, total bytes, etc.
+ */
+struct SimulationState {
+public:
+	std::atomic<int64_t> head_count;
+	std::atomic<int64_t> get_count;
+	std::atomic<int64_t> put_count;
+	std::atomic<int64_t> total_bytes_sent;
+	std::atomic<int64_t> total_bytes_received;
+
+	SimulationState() {
+		head_count = 0;
+		get_count = 0;
+		put_count = 0;
+		total_bytes_sent = 0;
+		total_bytes_received = 0;
+	}
+};
+
+/**
  * SimulationFileHandle: extends HTTPFileHandle. We store a pointer to the FileOpener
  * so we can retrieve a SimulationMetadataCache or do other logic that normally
  * requires an opener.
@@ -22,6 +43,9 @@ public:
 
 	// Store the opener here because FileHandle doesn't have an 'opener' member
 	optional_ptr<FileOpener> stored_opener;
+
+	// plus a pointer to the usage counters
+	std::shared_ptr<SimulationState> state;
 };
 
 /**

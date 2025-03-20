@@ -30,6 +30,9 @@ void SimulationFileHandle::Initialize(optional_ptr<FileOpener> file_opener) {
 	HTTPFileHandle::Initialize(file_opener);
 	this->stored_opener = file_opener;
 
+	// Create or assign the usage counters
+	this->state = std::make_shared<SimulationState>();
+
 	auto &sim_fs = file_system.Cast<SimulationFileSystem>();
 
 	// do a HEAD request to find length
@@ -94,6 +97,9 @@ duckdb::unique_ptr<ResponseWrapper> SimulationFileSystem::HeadRequest(FileHandle
 
 	// We want to retrieve the opener from the handle
 	auto &sim_handle = handle.Cast<SimulationFileHandle>();
+	if (sim_handle.state) {
+		sim_handle.state->head_count++; // increment HEAD usage
+	}
 	auto opener = sim_handle.stored_opener;
 
 	auto cache_ptr = GetSimulationCache(opener);
@@ -140,6 +146,9 @@ duckdb::unique_ptr<ResponseWrapper> SimulationFileSystem::GetRangeRequest(FileHa
 	SimulateLatency();
 
 	auto &sim_handle = handle.Cast<SimulationFileHandle>();
+	if (sim_handle.state) {
+		sim_handle.state->head_count++; // increment HEAD usage
+	}
 	if (sim_handle.file_fully_cached && sim_handle.cached_file_data) {
 		idx_t max_read = (sim_handle.cached_file_size > file_offset) ? (sim_handle.cached_file_size - file_offset) : 0;
 		idx_t read_len = (buffer_out_len > max_read) ? max_read : buffer_out_len;
@@ -174,6 +183,9 @@ duckdb::unique_ptr<ResponseWrapper> SimulationFileSystem::PutRequest(FileHandle 
 	SimulateLatency();
 
 	auto &sim_handle = handle.Cast<SimulationFileHandle>();
+	if (sim_handle.state) {
+		sim_handle.state->head_count++; // increment HEAD usage
+	}
 	sim_handle.file_fully_cached = false;
 	sim_handle.cached_file_size = 0;
 	sim_handle.cached_file_data.reset();
